@@ -1,0 +1,387 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050b18">
+<title>JARVIS AI</title>
+
+<style>
+* { box-sizing:border-box; }
+
+body {
+  margin:0;
+  background:radial-gradient(circle at center,#102b49,#050b18 70%);
+  color:#bceaff;
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+  text-align:center;
+}
+
+header {
+  padding:28px 10px 5px;
+  letter-spacing:5px;
+  font-size:25px;
+  color:#6bdcff;
+}
+
+.subtitle {
+  font-size:11px;
+  letter-spacing:4px;
+  color:#729db9;
+}
+
+.clock {
+  margin-top:25px;
+  font-size:15px;
+  color:#8abbd9;
+}
+
+.core {
+  width:230px;
+  height:230px;
+  margin:55px auto 35px;
+  border-radius:50%;
+  border:2px solid #36baff;
+  box-shadow:0 0 20px #168dff, inset 0 0 30px #1265a0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  position:relative;
+  animation:pulse 3s infinite;
+}
+
+.core:before,.core:after {
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  border:1px solid #38baff;
+}
+
+.core:before { inset:15px; }
+.core:after { inset:30px; border-style:dashed; }
+
+.core span {
+  font-size:49px;
+  font-weight:bold;
+  color:#a4eaff;
+  text-shadow:0 0 20px #00aaff;
+}
+
+@keyframes pulse {
+  50% { box-shadow:0 0 38px #168dff,inset 0 0 45px #1265a0; }
+}
+
+.listening {
+  animation:pulse .7s infinite;
+  border-color:#55ffcf;
+}
+
+.status {
+  color:#5cdaff;
+  font-size:13px;
+  letter-spacing:3px;
+  margin:15px;
+}
+
+button {
+  background:#092846;
+  border:1px solid #28aaff;
+  border-radius:25px;
+  color:#bceaff;
+  padding:14px 25px;
+  margin:8px;
+  font-size:14px;
+}
+
+button:active { background:#1265a0; }
+
+#answer {
+  margin:25px auto;
+  padding:15px;
+  width:90%;
+  max-width:450px;
+  min-height:75px;
+  border:1px solid #164c70;
+  border-radius:12px;
+  background:#071629;
+  line-height:1.6;
+}
+
+footer {
+  margin-top:35px;
+  padding:20px;
+  font-size:10px;
+  color:#517b99;
+  letter-spacing:2px;
+}
+</style>
+</head>
+
+<body>
+
+<header>J.A.R.V.I.S.</header>
+<div class="subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+
+<div class="clock" id="clock">Cargando sistema...</div>
+
+<div class="core" id="core">
+  <span>J</span>
+</div>
+
+<div class="status" id="status">SISTEMA EN ESPERA</div>
+
+<button onclick="startListening()">🎙 HABLAR CON JARVIS</button>
+<button onclick="speak('A sus órdenes. ¿En qué puedo ayudarle?')">ACTIVAR VOZ</button>
+
+<div id="answer">
+  Bienvenido. Todos los sistemas están preparados.
+  Esperando instrucciones.
+</div>
+
+<button onclick="stopListening()">DETENER MICRÓFONO</button>
+
+<footer>
+JARVIS AI · PERSONAL ASSISTANT · VERSION 1.0
+</footer>
+
+<script>
+const statusText = document.getElementById("status");
+const answer = document.getElementById("answer");
+const core = document.getElementById("core");
+
+function updateClock() {
+  document.getElementById("clock").textContent =
+    new Date().toLocaleString("es-CL");
+}
+setInterval(updateClock,1000);
+updateClock();
+
+function speak(text) {
+  speechSynthesis.cancel();
+
+  const message = new SpeechSynthesisUtterance(text);
+  message.lang = "es-ES";
+  message.rate = 0.90;
+  message.pitch = 0.85;
+
+  message.onstart = () => {
+    statusText.textContent = "JARVIS HABLANDO";
+  };
+
+  message.onend = () => {
+    statusText.textContent = "SISTEMA EN ESPERA";
+  };
+
+  speechSynthesis.speak(message);
+  answer.textContent = text;
+}
+
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+let recognition;
+let active = false;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = "es-CL";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    active = true;
+    core.classList.add("listening");
+    statusText.textContent = "ESCUCHANDO...";
+  };
+
+  recognition.onresult = (event) => {
+    const text = event.results[0][0].transcript;
+    answer.textContent = "Tú: " + text;
+    processCommand(text);
+  };
+
+  recognition.onerror = () => {
+    statusText.textContent = "ERROR DE MICRÓFONO";
+    core.classList.remove("listening");
+  };
+
+  recognition.onend = () => {
+    active = false;
+    core.classList.remove("listening");
+    if (statusText.textContent === "ESCUCHANDO...") {
+      statusText.textContent = "SISTEMA EN ESPERA";
+    }
+  };
+}
+
+function startListening() {
+  if (!recognition) {
+    answer.textContent = "Tu navegador no admite reconocimiento de voz.";
+    return;
+  }
+
+  if (active) return;
+
+  try {
+    recognition.start();
+  } catch(e) {
+    answer.textContent = "No se pudo iniciar el micrófono.";
+  }
+}
+
+function stopListening() {
+  if (recognition && active) recognition.stop();
+  speechSynthesis.cancel();
+  statusText.textContent = "SISTEMA EN ESPERA";
+}
+
+function processCommand(command) {
+  const text = command.toLowerCase();
+  let response;
+
+if (text.includes("recuerda") && (text.includes("mi teléfono") || text.includes("mi telefono"))) {
+    const dato = command.match(/mi tel[eé]fono es\s+(.+)/i);
+
+    if (dato && dato[1].trim()) {
+        memoriaJarvis.guardar("telefono", dato[1].trim());
+        response = "He guardado en mi memoria que tu teléfono es " + dato[1].trim();
+    } else {
+        response = "Dime qué teléfono quieres que recuerde.";
+    }
+}
+else if (text.includes("qué teléfono tengo") || text.includes("que telefono tengo") || text.includes("cuál es mi teléfono") || text.includes("cual es mi telefono")) {
+    const telefono = memoriaJarvis.consultar("telefono");
+    response = telefono ? "Tu teléfono es " + telefono : "Todavía no tengo guardado tu teléfono.";
+}
+
+else if (text.includes("recuerda que")) {
+    const dato = command.replace(/^.*?recuerda que/i, "").trim();
+
+    if (dato) {
+        memoriaJarvis.guardar("nota_" + Date.now(), dato);
+        response = "He guardado esa información en mi memoria.";
+    } else {
+        response = "Dime qué información quieres que recuerde.";
+    }
+}
+else if (
+    text.includes("qué recuerdas") ||
+    text.includes("que recuerdas") ||
+    text.includes("qué has guardado") ||
+    text.includes("que has guardado")
+) {
+    const datos = memoriaJarvis.mostrar();
+
+    const recuerdos = Object.entries(datos).map(([clave, valor]) => {
+        return clave === "telefono"
+            ? "Tu teléfono es " + valor
+            : valor;
+    });
+
+    response = recuerdos.length
+        ? "Esto es lo que recuerdo: " + recuerdos.join(". ")
+        : "Todavía no tengo recuerdos guardados.";
+}
+
+  else if (text.includes("hola")) {
+    response = "Buenos días, señor. Me encuentro a su disposición.";
+  }
+  else if (text.includes("hora")) {
+    response = "La hora actual es " +
+      new Date().toLocaleTimeString("es-CL");
+  }
+  else if (text.includes("fecha")) {
+    response = "Hoy es " +
+      new Date().toLocaleDateString("es-CL");
+  }
+  else if (text.includes("cómo estás")) {
+    response = "Todos mis sistemas funcionan correctamente.";
+  }
+  else if (text.includes("tu nombre")) {
+    response = "Soy JARVIS, su asistente personal.";
+  }
+  else if (text.includes("apagar")) {
+    response = "No puedo apagar el dispositivo todavía.";
+  }
+  else {
+    consultarGemini(command);
+    return;
+}
+
+  speak(response);
+}
+  
+// =================================
+// MEMORIA LOCAL DE JARVIS
+// =================================
+
+const memoriaJarvis = {
+    guardar: function(clave, valor) {
+        let memoria = JSON.parse(
+            localStorage.getItem("jarvis_memoria") || "{}"
+        );
+
+        memoria[clave] = valor;
+
+        localStorage.setItem(
+            "jarvis_memoria",
+            JSON.stringify(memoria)
+        );
+
+        return "He guardado esa información.";
+    },
+
+    consultar: function(clave) {
+        let memoria = JSON.parse(
+            localStorage.getItem("jarvis_memoria") || "{}"
+        );
+
+        return memoria[clave] || null;
+    },
+
+    mostrar: function() {
+        return JSON.parse(
+            localStorage.getItem("jarvis_memoria") || "{}"
+        );
+    }
+};
+
+console.log("Memoria de JARVIS activada.");
+
+// CONEXIÓN CON EL SERVIDOR GEMINI
+async function consultarGemini(pregunta) {
+  const URL_JARVIS = "https://script.google.com/macros/s/AKfycbwMhdqpnZsAbWe37pdd5p1bqJFp1l75mTVxIcDzpSoAE6SBMamBOS6zHIT9DXJ46eQh/exec";
+
+  try {
+    const respuesta = await fetch(URL_JARVIS, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        message: pregunta,
+        password: prompt("Contraseña de JARVIS:")
+      })
+    });
+
+    const datos = await respuesta.json();
+
+    if (datos.error) {
+      speak("Error: " + datos.error);
+      return;
+    }
+
+    speak(datos.reply || "No recibí respuesta.");
+} catch (error) {
+  statusText.textContent = "ERROR DE CONEXIÓN";
+  answer.textContent = "Detalle: " + error.name + " - " + error.message;
+  console.error("Error JARVIS:", error);
+}
+}
+</script>
+
+</body>
+</html>
