@@ -381,6 +381,42 @@ async function consultarGemini(pregunta) {
   console.error("Error JARVIS:", error);
 }
 }
+async function crearEventoCalendar(titulo, inicio, fin, descripcion = "", minutosAviso = 180) {
+  const URL_JARVIS = "https://script.google.com/macros/s/AKfycbwMhdqpnZsAbWe37pdd5p1bqJFp1l75mTVxIcDzpSoAE6SBMamBOS6zHIT9DXJ46eQh/exec";
+
+  const password = prompt("Contraseña de JARVIS:");
+  if (!password) return;
+
+  try {
+    const respuesta = await fetch(URL_JARVIS, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        accion: "crear_evento",
+        titulo: titulo,
+        inicio: inicio,
+        fin: fin,
+        descripcion: descripcion,
+        minutosAviso: minutosAviso,
+        password: password
+      })
+    });
+
+    const datos = await respuesta.json();
+
+    if (datos.error) {
+      speak("Error al agendar: " + datos.error);
+      return;
+    }
+
+    speak(datos.mensaje || "Solicitud enviada a Google Calendar.");
+  } catch (error) {
+    speak("No pude conectar con Google Calendar.");
+    console.error(error);
+  }
+}  
 </script>
 
 </body>
