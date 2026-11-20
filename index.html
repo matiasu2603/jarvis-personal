@@ -381,6 +381,47 @@ async function consultarGemini(pregunta) {
   console.error("Error JARVIS:", error);
 }
 }
+  async function consultarAgendaJARVIS(dias = 1) {
+  const URL_JARVIS = "https://script.google.com/macros/s/AKfycbwMhdqpnZsAbWe37pdd5p1bqJFp1l75mTVxIcDzpSoAE6SBMamBOS6zHIT9DXJ46eQh/exec";
+  const password = prompt("Contraseña de JARVIS:");
+  if (!password) return;
+
+  try {
+    const respuesta = await fetch(URL_JARVIS, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        accion: "consultar_eventos",
+        dias: dias,
+        password: password
+      })
+    });
+
+    const datos = await respuesta.json();
+
+    if (datos.error) {
+      speak("Error al consultar tu agenda.");
+      return;
+    }
+
+    if (!datos.eventos || datos.eventos.length === 0) {
+      speak("No tienes eventos programados en ese período.");
+      return;
+    }
+
+    const resumen = datos.eventos.map(evento =>
+      evento.titulo + ", el " + evento.inicio
+    ).join(". ");
+
+    speak("Estos son tus próximos eventos: " + resumen);
+
+  } catch (error) {
+    speak("No pude consultar tu calendario.");
+    console.error(error);
+  }
+}
 async function crearEventoCalendar(titulo, inicio, fin, descripcion = "", minutosAviso = 180) {
   const URL_JARVIS = "https://script.google.com/macros/s/AKfycbwMhdqpnZsAbWe37pdd5p1bqJFp1l75mTVxIcDzpSoAE6SBMamBOS6zHIT9DXJ46eQh/exec";
 
