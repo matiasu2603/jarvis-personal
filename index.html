@@ -306,7 +306,26 @@ else if (
   else if (text.includes("apagar")) {
     response = "No puedo apagar el dispositivo todavía.";
   }
-  else {
+  else if (
+    text.includes("agenda") ||
+    text.includes("mis eventos") ||
+    text.includes("qué tengo mañana") ||
+    text.includes("que tengo mañana") ||
+    text.includes("próximos eventos") ||
+    text.includes("proximos eventos") ||
+    text.includes("actividades de mañana") ||
+    text.includes("actividades para mañana")
+) {
+    let dias = 1;
+
+    if (text.includes("próximos") || text.includes("proximos")) {
+        dias = 7;
+    }
+
+    consultarAgendaJARVIS(dias);
+    return;
+}
+else {
     consultarGemini(command);
     return;
 }
